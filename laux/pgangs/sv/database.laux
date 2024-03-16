@@ -1,0 +1,259 @@
+import ORM from XeninUI.ORM
+
+class Database extends ORM
+    constructor()
+        super("pgangs/migrations/")
+    end
+
+    -- Gangs
+    createGang(gang: pGangs.Gang)
+        return self:orm("purity_gangs", true)
+            :insert({
+                name = gang:getName(),
+                tag = gang:getTag(),
+                color = XeninUI:RGBToHex(gang:getColor()):sub(2),
+                icon = gang:getIcon(),
+                background = gang:getBackground(),
+                created_at = self.b.now(),
+                updated_at = self.b.now()
+            })
+            :run()
+            :next((data) =>
+                local id = data[2]
+                gang:setId(id)
+
+                local owner = pGangs.Role()
+                    :setName("Owner")
+                    :setColor(XeninUI:RGBtoHex(Color(255, 255, 255)):sub(2))
+                    :setIcon("")
+                    :setPermissions(pGangs.Config.Permissions.ALL)
+                    :setIsOwner(true)
+
+                -- A bit messy might redo this part
+                return self:createRole(gang, owner):next(() =>
+                    gang:addRole(owner)
+
+                    return pLib.Promises.new():resolve()
+                end, (err) =>
+                    return pLib.Promises.new():reject(err)
+                end)
+            end, (err) =>
+                return pLib.Promises.new():reject(err)
+            end)
+            :next(() =>
+                return self:addMember(gang, gang:getOwnerRole(), gang:getOwner())
+            end, (err) =>
+                return pLib.Promises.new():reject(err)
+            end)
+    end
+
+    removeGang(gang: pGangs.Gang|number)
+        local gangId = isnumber(gang) and gang or gang:getId()
+
+        return self:orm("purity_gangs")
+            :delete()
+            :where("id", "=", gangId)
+            :run()
+    end
+
+    getGangById(gang: pGangs.Gang|number)
+        local gangId = isnumber(gang) and gang or gang:getId()
+
+        return self:orm("purity_gangs")
+            :select()
+            :where("id", "=", gangId)
+            :run()
+    end
+
+    getGangs()
+        return self:orm("purity_gangs")
+            :select()
+            :run()
+    end
+
+    -- Roles
+    createRole(gang: pGangs.Gang, role: pGangs.Role)
+        return self:orm("purity_gangs_roles", true)
+            :insert({
+                gangId = gang:getId(),
+                name = role:getName(),
+                color = XeninUI:RGBToHex(role:getColor()):sub(2),
+                icon = role:getIcon(),
+                permissions = role:getPermissions(),
+                isOwner = role:getIsOwner() and 1 or 0,
+                created_at = self.b.now(),
+                updated_at = self.b.now()
+            })
+            :run()
+            :next((data) =>
+                local id = data[2]
+                role:setId(id)
+
+                return pLib.Promises.new():resolve()
+            end, (err) =>
+                return pLib.Promises.new():reject(err)
+            end)
+    end
+
+    updateRole(role: pGangs.Role)
+        return self:orm("purity_gangs_role")
+            :update({
+                name = role:getName(),
+                color = XeninUI:RGBToHex(role:getColor()):sub(2),
+                icon = role:getIcon(),
+                permissions = role:getPermissions(),
+                updated_at = self.b.now()
+            })
+            :where("id", "=", role:getId())
+            :run()
+    end
+
+    removeRole(role: pGangs.Role|number)
+        local roleId = isnumber(role) and role or role:getId()
+
+        return self:orm("purity_gangs_roles")
+            :delete()
+            :where("id", "=", roleId)
+            :run()
+    end
+
+    getRoles(gang: pGangs.Gang|number)
+        local gangId = isnumber(gang) and gang or gang:getId()
+
+        return self:orm("purity_gangs_roles")
+            :select()
+            :where("gangId", "=", gangId)
+            :run()
+    end
+
+    -- Member
+    addMember(gang: pGangs.Gang|number, role: pGangs.Role|number, sid64)
+        local gangId = isnumber(gang) and gang or gang:getId()
+        local roleId = isnumber(role) and role or role:getId()
+        sid64 = isstring(sid64) and sid64 or self.b.sid64(sid64)
+
+        return self:orm("purity_gangs_members")
+            :insert({
+                sid64 = sid64,
+                gangId = gangId,
+                roleId = roleId,
+                created_at = self.b.now(),
+                updated_at = self.b.now()
+            })
+            :run()
+    end
+
+    updateMember(gang: pGangs.Gang|number, role: pGangs.Role|number, sid64)
+        local gangId = isnumber(gang) and gang or gang:getId()
+        local roleId = isnumber(role) and role or role:getId()
+        sid64 = isstring(sid64) and sid64 or self.b.sid64(sid64)
+
+        return self:orm("purity_gangs_members")
+            :update({
+                roleId = roleId,
+                updated_at = self.b.now()
+            })
+            :where("gangId", "=", gangId)
+            :where("sid64", "=", sid64)
+            :run()
+    end
+
+    removeMember(gang: pGangs.Gang|number, sid64)
+        local gangId = isnumber(gang) and gang or gang:getId()
+        sid64 = isstring(sid64) and sid64 or self.b.sid64(sid64)
+
+        return self:orm("purity_gangs_members")
+            :delete()
+            :where("gangId", "=", gangId)
+            :where("sid64", "=", sid64)
+            :run()
+    end
+
+    getMembers(gang: pGangs.Gang|number)
+        local gangId = isnumber(gang) and gang or gang:getId()
+
+        return self:orm("purity_gangs_members")
+            :select()
+            :where("gangId", "=", gangId)
+            :run()
+    end
+
+    -- Requests
+    createRequest(gang: pGangs.Gang|number, sid64)
+        local gangId = isnumber(gang) and gang or gang:getId()
+        sid64 = isstring(sid64) and sid64 or self.b.sid64(sid64)
+
+        return self:orm("purity_gangs_requests", true)
+            :insert({
+                gangId = gangId,
+                sid64 = sid64,
+                created_at = self.b.now()
+            })
+            :run()
+    end
+
+    removeRequest(gang: pGangs.Gang|number, sid64)
+        local gangId = isnumber(gang) and gang or gang:getId()
+        sid64 = isstring(sid64) and sid64 or self.b.sid64(sid64)
+
+        return self:orm("purity_gangs_requests")
+            :delete()
+            :where("gangId", "=", gangId)
+            :where("sid64", "=", sid64)
+            :run()
+    end
+
+    getGangRequests(gang: pGangs.Gang|number)
+        local gangId = isnumber(gang) and gang or gang:getId()
+
+        return self:orm("purity_gangs_requests")
+            :select()
+            :where("gangId", "=", gangId)
+            :run()
+    end
+
+    getUserRequests(sid64)
+        sid64 = isstring(sid64) and sid64 or self.b.sid64(sid64)
+
+        return self:orm("purity_gangs_requests")
+            :select()
+            :where("sid64", "=", sid64)
+            :run()
+    end
+
+    -- Misc
+    updateMoney(gang: pGangs.Gang)
+        return self:orm("purity_gangs")
+            :update({
+                money = gang:getMoney()
+            })
+            :where("id", "=", gang:getId())
+            :run()
+    end
+
+    updateXp(gang: pGangs.Gang)
+        return self:orm("purity_gangs")
+            :update({
+                xp = gang:getXp()
+            })
+            :where("id", "=", gang:getId())
+            :run()
+    end
+
+    updateLevel(gang: pGangs.Gang)
+        return self:orm("purity_gangs")
+            :update({
+                level = gang:getLevel()
+            })
+            :where("id", "=", gang:getId())
+            :run()
+    end
+
+    __type() return "pGangs.Database" end
+end
+
+pGangs.Database = Database()
+
+hook.Add("Xenin.ConfigLoaded", "pGangs", function()
+    pGangs.Database = Database()
+end)
