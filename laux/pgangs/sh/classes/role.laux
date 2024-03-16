@@ -1,0 +1,13 @@
+-- TODO
+public class pGangs.Role 
+    _get _set id 
+    _get _set name 
+    _get _set color 
+    _get _set icon 
+    _get _set permissions
+    _get _set isOwner
+
+    constructor()
+
+    end
+end
