@@ -1,0 +1,97 @@
+return (Table) =>
+    Table("purity_gangs", (tbl) =>
+        tbl:increments("id")
+        tbl:string("name")
+        tbl:char("tag", 5)
+        tbl:char("color", 6)
+        tbl:string("icon")
+        tbl:string("background")
+        tbl:integer("level"):unsigned():default(0)
+        tbl:integer("xp"):unsigned():default(0)
+        tbl:integer("money"):unsigned():default(0)
+        tbl:integer("credits"):unsigned():default(0)
+        -- tbl:json("upgrades"):nullable()
+        -- tbl:json("roles"):nullable() -- ? MOVE TO SEPERATE TABLE
+        tbl:timestamps()
+    end)
+
+    Table("purity_gangs_roles", (tbl) =>
+        tbl:increments("id")
+        tbl:integer("gangId")
+        tbl:string("name")
+        tbl:char("color", 6)
+        tbl:string("icon")
+        tbl:integer("permissions"):unsigned():default(0)
+        tbl:boolean("isOwner"):default(0)
+        tbl:timestamps()
+
+        tbl:constraint("fk_gangs_roles_gangId")
+            :foreign("gangId")
+            :references("purity_gangs")
+            :columns("id")
+            :cascade()
+    end)
+
+    Table("purity_gangs_upgrades", (tbl) =>
+        tbl:string("upgrade")
+        tbl:integer("gangId")
+        tbl:integer("level")
+        tbl:timestamps()
+
+        tbl:constraint("fk_gangs_upgrades_gangId")
+            :foreign("gangId")
+            :references("purity_gangs")
+            :columns("id")
+            :cascade()
+
+        tbl:constraint()
+            :primary("upgrade", "gangId")
+    end)
+
+    Table("purity_gangs_requests", (tbl) =>
+        tbl:integer("gangId")
+        tbl:steamid64("sid64")
+        tbl:timestamp("created_at")
+
+        tbl:constraint()
+            :primary("gangId", "userid")
+
+        tbl:constraint("fk_gangs_requests_gangId")
+            :foreign("gangId")
+            :references("purity_gangs")
+            :columns("id")
+            :cascade()
+    end)
+
+    Table("purity_gangs_members", (tbl) =>
+        tbl:steamid64("sid64")
+        tbl:integer("gangId")
+        tbl:integer("roleId")
+        tbl:timestamps()
+
+        tbl:constraint("fk_gangs_members_gangId")
+            :foreign("gangId")
+            :references("purity_gangs")
+            :columns("id")
+            :cascade()
+
+        tbl:constraint("fk_gangs_members_roleId")
+            :foreign("roleId")
+            :references("purity_gangs_roles")
+            :columns("id")
+            :cascade()
+    end)
+
+    Table("purity_gangs_territories", (tbl) =>
+        tbl:increments("id")
+        tbl:string("name"):nullable()
+        tbl:json("data")
+        tbl:integer("gangId")
+
+        tbl:constraint("fk_gangs_territories_gangId")
+            :foreign("gangId")
+            :references("purity_gangs")
+            :columns("id")
+            :setNull()
+    end)
+end
