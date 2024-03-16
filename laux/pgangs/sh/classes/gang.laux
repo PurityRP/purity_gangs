@@ -1,0 +1,143 @@
+public class pGangs.Gang
+    members = {}
+    roles = {}
+    upgrades = {}
+
+    _get _set id
+    _get _set name
+    _get _set tag
+    _get _set color 
+    _get _set icon 
+    _get _set background
+    _get _set money 
+    _get _set credits
+    _get _set xp
+    _get _set level
+
+    _get _set members
+    _get _set roles 
+    _get _set upgrades
+
+    constructor() 
+    end
+
+    -- Roles
+    addRole(role: pGangs.Role)
+        self.roles[role:getId()] = role 
+    end
+
+    removeRole(id)
+        self.roles[id] = nil
+    end
+
+    getRole(id)
+        return self.roles[id]
+    end
+
+    getRoleByName(name)
+        for k, v of self:getRoles() do
+            if v:getName() == name then
+                return v
+            end
+        end
+
+        return false
+    end
+
+    getOwnerRole()
+        for k, v of self:getRoles() do
+            if v:getIsOwner() then
+                return v
+            end
+        end
+
+        return false
+    end
+
+    -- Upgrades
+    addUpgrade(upgrade: pGangs.Upgrade)
+        self.upgrades[upgrade:getId()] = upgrade
+    end
+
+    removeUpgrade(id)
+        self.upgrades[id] = nil
+    end
+
+    getUpgrade(id)
+        return self.upgrades[id]
+    end
+
+    getUpgrades()
+        return self.upgrades
+    end
+
+    -- Members
+    addMember(ply, role: pGangs.Role|number)
+        ply = isstring(ply) and ply or ply:SteamID64()
+        local roleId = isnumber(role) and role or role:getId()
+
+        self.members[ply] = roleId
+    end
+
+    removeMember(ply)
+        ply = isstring(ply) and ply or ply:SteamID64()
+
+        self.members[ply] = nil
+    end
+
+    getMember(ply)
+        ply = isstring(ply) and ply or ply:SteamID64()
+
+        return self.members[ply]
+    end
+
+    isMember(ply)
+        return self:getMember(ply)
+    end
+
+    getOnlineMembers()
+        local tbl = {}
+
+        for k, v of self:getMembers() do
+            if player.GetBySteamID64(k) then
+                table.insert(tbl, player.GetBySteamID64(k))
+            end
+        end
+
+        return tbl
+    end
+
+    getOwner()
+        for k, v of self:getMembers() do
+            if v == self:getOwnerRole():getId() then
+                return k
+            end
+        end
+
+        return false
+    end
+
+    updateMember(ply, role: pGangs.Role|number)
+        ply = isstring(ply) and ply or ply:SteamID64()
+        local roleId = isnumber(role) and role or role:getId()
+
+        self.members[ply] = roleId
+    end
+
+    getMemberPerms(ply)
+        ply = isstring(ply) and ply or ply:SteamID64()
+
+        return self.roles[self:getMember(ply)]:getPermissions()
+    end
+
+    -- Misc
+    addMoney(amt)
+        self:setMoney(self:getMoney() + amt)
+
+        return self 
+    end
+
+    canAfford(amt, credits)
+        return credits and self:getCredits() >= amt or self:getMoney() >= amt
+    end
+end
