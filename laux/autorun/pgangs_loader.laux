@@ -1,0 +1,40 @@
+pGangs ||= {}
+pGangs.Config ||= {}
+pGangs.Core ||= {}
+pGangs.Gangs ||= {}
+pGangs.Database ||= {}
+pGangs.Network ||= {}
+
+local function Load()
+    pGangs.Addon = pLib.Builders.Loader("Purity Gangs", Color(63, 140, 255), "pgangs", true)
+        :pushDirectory("sh", pLib.Realms.Shared, {
+            recursive = true
+        })
+        :pushDirectory("sv", pLib.Realms.Server)
+        :pushDirectory("cl", pLib.Realms.Client, {
+            recursive = true
+        })
+        :load()
+end
+
+local function xeninLoad()
+    if pLib then 
+        Load()
+    else
+        hook.Add("pLib.FinishedLoading", "pGangs.LoadAddon", Load)
+    end
+end
+
+if XeninUI then 
+    xeninLoad()
+else
+    hook.Add("XeninUI.Loaded", "pGangs.LoadAddon", xeninLoad)
+end
+
+-- TODO: 
+-- - Missions
+-- - Hideouts 
+-- - Passive way to make a little money - money printer inside hideout that needs supplies so in a gang pc you can start a mission that involves a run for supplies
+-- - Gang wars
+-- - Gang alliances
+-- - Missions like robbing a bank, stealing a car, etc and taking this stuff back to hideout which has to wait for a cooldown to sell it
